@@ -31,17 +31,19 @@
 /* ════════════════════════════════════════════════════════════════════════
    放款狀態頁「包覆頁」（v7.9.5）
    目的：遮住 Google Apps Script 頂端那列「這個應用程式是由 Google Apps Script 的使用者建立」警語。
-   原理：Google 的 /exec 頁面外面還有一層 Google 自己的殼（警語列＋沙箱 iframe），
-         那層殼在別的網域，我們自己的頁面動不到它；所以改用「把整頁塞 iframe＋負邊距往上推」
-         讓殼的那 47px（窄螢幕 81px）跑出螢幕外面，使用者看到的就只剩我們的頁面。
+   原理：把 GAS 的 /exec 頁面塞進 iframe。Google 那層外殼（另一個網域）在 iframe 情境下
+         不會把警語列塞進來（2026-11 實測：寬 1280／窄 390 都只有我們自己的頁面，偏移 0px），
+         所以預設裁剪 0px；如果哪天 Google 又外塞一列，用網址參數 ?c=47 或 ?c=81 手動往上推即可。
    用法：把這個網址（GitHub Pages 幕前網址）加書籤／分享給訪客；不要開 GAS 原網址。
-   診斷：網址加 ?c=0（完全不裁剪）、?c=81（手動微調偏移）可以看實際效果。
+   診斷：網址加 ?c=0（完全不裁剪）、?c=81（手動微調偏移）可以看實際效果（右下角會顯示裁剪高度）。
    ════════════════════════════════════════════════════════════════════════ */
 
 var GAS_URL   = "https://script.google.com/macros/s/AKfycbz2AwTOyfcZRAKcs4eTBp5J2QhptcxOfk8Tclb-AoY9QzCpdiKsEVyVjhG7nkhJUuLU/exec";
-var CLIP_WIDE = 47;   // 寬螢幕：Google 殼（含警語列）的高度實測
-var CLIP_NARROW = 81; // 窄螢幕／手機：殼會換行、比較高
-var BREAK     = 656;  // 寬度臨界：大於等於這個寬度用 CLIP_WIDE，小於用 CLIP_NARROW
+var CLIP_DEFAULT = 0;   // 預設不裁剪（實測 iframe 情境下 Google 不塞警語列）
+var CLIP_WIDE  = 47;    // 救火資料：如果 Google 未來又在外層塞 47px（寬螢幕）就用這個
+var CLIP_NARROW = 81;   // 救火資料：窄螢幕／手機版 Google 外殼比較高
+var USE_HEURISTIC = false;  // 改成 true 才會自動套用上面的 47/81；現行實測不需要
+var BREAK     = 656;    // 寬度臨界：大於等於這個寬度用 CLIP_WIDE，小於用 CLIP_NARROW
 
 (function () {
   var q = new URLSearchParams(location.search);
@@ -58,7 +60,7 @@ var BREAK     = 656;  // 寬度臨界：大於等於這個寬度用 CLIP_WIDE，
   function fit() {
     var w = window.innerWidth || (document.documentElement.clientWidth || 0);
     var h = window.innerHeight || 0;
-    var off = (w >= BREAK) ? CLIP_WIDE : CLIP_NARROW;
+    var off = USE_HEURISTIC ? ((w >= BREAK) ? CLIP_WIDE : CLIP_NARROW) : CLIP_DEFAULT;
     var c = q.get("c");
     if (c !== null && c !== "" && !isNaN(parseFloat(c))) off = parseFloat(c);   // 診斷／手動微調
     var f = document.getElementById("frame");
