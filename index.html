@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>放款狀態</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- 不讓搜尋引擎收這個包覆頁（也避免 Bot 去爬內嵌的 GAS 網址） -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #0a0f1c; overflow: hidden; }
+  #frame { position: fixed; left: 0; top: 0; width: 100%; border: 0; display: block; }
+  #hint { position: fixed; right: 12px; bottom: 10px; z-index: 5; display: none;
+          font: 12px system-ui, "Microsoft JhengHei", sans-serif; color: #94a3b8;
+          background: rgba(10,15,28,.82); border: 1px solid rgba(148,163,184,.28);
+          border-radius: 8px; padding: 5px 9px; }
+</style>
+</head>
+<body>
+<iframe id="frame" title="放款狀態" loading="eager"
+        allow="clipboard-write; encrypted-media; fullscreen"></iframe>
+<div id="hint"></div>
+<noscript>
+  <p style="color:#e6edf7;padding:18px;font-family:system-ui,'Microsoft JhengHei',sans-serif">
+    這個頁面需要 JavaScript。請改直接開
+    <a style="color:#7dd3fc" href="https://script.google.com/macros/s/AKfycbz2AwTOyfcZRAKcs4eTBp5J2QhptcxOfk8Tclb-AoY9QzCpdiKsEVyVjhG7nkhJUuLU/exec">放款狀態頁</a>
+    （會看到 Google 那列警語）。
+  </p>
+</noscript>
+<script>
+/* ════════════════════════════════════════════════════════════════════════
+   放款狀態頁「包覆頁」（v7.9.5）
+   目的：遮住 Google Apps Script 頂端那列「這個應用程式是由 Google Apps Script 的使用者建立」警語。
+   原理：Google 的 /exec 頁面外面還有一層 Google 自己的殼（警語列＋沙箱 iframe），
+         那層殼在別的網域，我們自己的頁面動不到它；所以改用「把整頁塞 iframe＋負邊距往上推」
+         讓殼的那 47px（窄螢幕 81px）跑出螢幕外面，使用者看到的就只剩我們的頁面。
+   用法：把這個網址（GitHub Pages 幕前網址）加書籤／分享給訪客；不要開 GAS 原網址。
+   診斷：網址加 ?c=0（完全不裁剪）、?c=81（手動微調偏移）可以看實際效果。
+   ════════════════════════════════════════════════════════════════════════ */
+
+var GAS_URL   = "https://script.google.com/macros/s/AKfycbz2AwTOyfcZRAKcs4eTBp5J2QhptcxOfk8Tclb-AoY9QzCpdiKsEVyVjhG7nkhJUuLU/exec";
+var CLIP_WIDE = 47;   // 寬螢幕：Google 殼（含警語列）的高度實測
+var CLIP_NARROW = 81; // 窄螢幕／手機：殼會換行、比較高
+var BREAK     = 656;  // 寬度臨界：大於等於這個寬度用 CLIP_WIDE，小於用 CLIP_NARROW
+
+(function () {
+  var q = new URLSearchParams(location.search);
+
+  // 1) 把 page 參數轉給 GAS，同時把自己的幕前網址餵回去（GAS 前端靠它把「設定頁／管理頁」連結指回包覆頁）
+  var page = (q.get("page") || "").toLowerCase();
+  if (page !== "settings" && page !== "admin") page = "";
+  var base = location.origin + location.pathname;      // https://<帳號>.github.io/<路徑>/
+  var src = GAS_URL + "?base=" + encodeURIComponent(base);
+  if (page) src = src + "&page=" + page;
+  document.getElementById("frame").src = src;
+
+  // 2) 依視窗寬度決定裁剪高度（負邊距＋把 iframe 高度加長，才不會下面留白）
+  function fit() {
+    var w = window.innerWidth || (document.documentElement.clientWidth || 0);
+    var h = window.innerHeight || 0;
+    var off = (w >= BREAK) ? CLIP_WIDE : CLIP_NARROW;
+    var c = q.get("c");
+    if (c !== null && c !== "" && !isNaN(parseFloat(c))) off = parseFloat(c);   // 診斷／手動微調
+    var f = document.getElementById("frame");
+    f.style.top = (-off) + "px";
+    f.style.height = (h + off) + "px";
+    var hint = document.getElementById("hint");
+    hint.style.display = (c !== null && c !== "") ? "block" : "none";
+    if (hint.style.display === "block") hint.textContent = "裁剪 " + off + "px（寬 " + w + "）";
+  }
+  fit();
+  window.addEventListener("resize", fit);
+  window.addEventListener("orientationchange", fit);
+})();
+</script>
+</body>
+</html>
