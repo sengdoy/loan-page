@@ -50,7 +50,7 @@ var BREAK     = 656;    // 寬度臨界：大於等於這個寬度用 CLIP_WIDE�
 
   // 1) 把 page 參數轉給 GAS，同時把自己的幕前網址餵回去（GAS 前端靠它把「設定頁／管理頁」連結指回包覆頁）
   var page = (q.get("page") || "").toLowerCase();
-  if (page !== "settings" && page !== "admin") page = "";
+  if (page !== "settings" && page !== "admin" && page !== "changepw") page = "";   // 【v7.9.7】新增 changepw（自助換密碼頁）＝否則點了「換我的密碼」會被包覆頁當成主頁＝看上去像沒反應
   var base = location.origin + location.pathname;      // https://<帳號>.github.io/<路徑>/
   var src = GAS_URL + "?base=" + encodeURIComponent(base);
   if (page) src = src + "&page=" + page;
